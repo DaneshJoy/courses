@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "generate-catalog": "node scripts/generate-catalog.cjs",
     "validate": "node scripts/generate-catalog.cjs --validate-only",
-    "test": "vitest run",
+    "test": "vitest run tests/*.test.ts && playwright test",
     "check": "npm run validate && npm run build && npm run test"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "vazirmatn": "^33.0.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

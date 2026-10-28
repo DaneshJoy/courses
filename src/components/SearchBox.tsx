@@ -1,0 +1,1 @@
+export function SearchBox({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <input className="search-box" type="search" value={value} onChange={(event) => onChange(event.target.value)} placeholder="جست‌وجوی دوره‌ها" aria-label="جست‌وجوی دوره‌ها" />; }
