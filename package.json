@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "generate-catalog": "node scripts/generate-catalog.cjs",
     "validate": "node scripts/generate-catalog.cjs --validate-only",
-    "test": "vitest run tests/*.test.ts && playwright test",
+    "test": "vitest run tests/*.test.ts tests/*.test.tsx && playwright test",
     "check": "npm run validate && npm run build && npm run test"
   },
   "dependencies": {
