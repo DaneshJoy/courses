@@ -21,7 +21,10 @@ function createAjv() {
       return false;
     }
   });
+  // Accepted subset: primary language subtag 2-3 letters + optional 2-8
+  // alphanumeric subtags. Not full RFC 5646.
   ajv.addFormat("bcp47", /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i);
+  // Accepted subset: YYYY-MM-DD or a full date-time with Z/offset.
   ajv.addFormat("iso-date", (value) => {
     const iso =
       /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))?$/;
@@ -41,11 +44,18 @@ function loadSchemas() {
   };
 }
 
+function describeAjvError(error) {
+  if (error.keyword === "enum") {
+    return `${error.message} (${error.params.allowedValues.join(", ")})`;
+  }
+  if (error.keyword === "additionalProperties") {
+    return `${error.message} ("${error.params.additionalProperty}")`;
+  }
+  return error.message;
+}
+
 function formatAjvError(error) {
-  const detail =
-    error.keyword === "enum"
-      ? `${error.message} (${error.params.allowedValues.join(", ")})`
-      : error.message;
+  const detail = describeAjvError(error);
   const entry = /^\/(\d+)(\/.*)?$/.exec(error.instancePath);
   if (entry) return `entry[${entry[1]}]${entry[2] ?? ""}: ${detail}`;
   return `registry${error.instancePath || ""}: ${detail}`;
@@ -75,15 +85,43 @@ function validateRegistry(registry, ajv = createAjv()) {
   return { valid: errors.length === 0, errors };
 }
 
-async function fetchManifest(url) {
+// JSON Schema cannot express uniqueness across array items; enforce it here.
+function validateLectureUniqueness(lectures) {
+  const errors = [];
+  const ids = new Map();
+  const orders = new Map();
+  lectures.forEach((lecture, index) => {
+    if (ids.has(lecture.id)) {
+      errors.push(
+        `lecture "${lecture.id}": duplicate lecture id (first declared at lecture[${ids.get(lecture.id)}])`,
+      );
+    } else {
+      ids.set(lecture.id, index);
+    }
+    if (orders.has(lecture.order)) {
+      errors.push(
+        `lecture "${lecture.id}": duplicate lecture order ${lecture.order} (first declared at lecture[${orders.get(lecture.order)}])`,
+      );
+    } else {
+      orders.set(lecture.order, index);
+    }
+  });
+  return errors;
+}
+
+async function fetchManifest(url, fetchImpl = fetch) {
   let response;
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    response = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   } catch (error) {
     throw new Error(`manifest unreachable (${error.message})`);
   }
   if (!response.ok) {
     throw new Error(`manifest unreachable (HTTP ${response.status})`);
+  }
+  // Redirects keep the final URL; the first hop is https via the registry schema.
+  if (typeof response.url === "string" && !response.url.startsWith("https:")) {
+    throw new Error(`manifest unreachable (redirected to non-https URL ${response.url})`);
   }
   try {
     return await response.json();
@@ -92,7 +130,7 @@ async function fetchManifest(url) {
   }
 }
 
-async function loadPublishedCourses(registry, ajv) {
+async function loadPublishedCourses(registry, ajv, fetchImpl = fetch) {
   const validateManifest = ajv.compile(loadSchemas().manifest);
   const courses = [];
   const failures = [];
@@ -103,10 +141,10 @@ async function loadPublishedCourses(registry, ajv) {
       continue;
     }
     try {
-      const manifest = await fetchManifest(entry.manifestUrl);
+      const manifest = await fetchManifest(entry.manifestUrl, fetchImpl);
       if (!validateManifest(manifest)) {
         const details = validateManifest.errors
-          .map((error) => `${error.instancePath || "/"}: ${error.message}`)
+          .map((error) => `${error.instancePath || "/"}: ${describeAjvError(error)}`)
           .join("; ");
         throw new Error(`manifest invalid: ${details}`);
       }
@@ -115,11 +153,15 @@ async function loadPublishedCourses(registry, ajv) {
           `manifest id "${manifest.id}" does not match registry id "${entry.id}"`,
         );
       }
+      const lectureErrors = validateLectureUniqueness(manifest.lectures);
+      if (lectureErrors.length > 0) {
+        throw new Error(`manifest invalid: ${lectureErrors.join("; ")}`);
+      }
       if (manifest.lectures.length === 0) {
         throw new Error("manifest invalid: published course must have at least one lecture");
       }
       console.log(`ok    ${entry.id} (${manifest.lectures.length} lectures)`);
-      courses.push(manifest);
+      courses.push(entry.featured === true ? { ...manifest, featured: true } : manifest);
     } catch (error) {
       const message = `course "${entry.id}": ${error.message}`;
       failures.push(message);
@@ -144,21 +186,40 @@ function buildSearchIndex(courses, generatedAt) {
   };
 }
 
-function writeGenerated(courses, generatedAt) {
-  fs.mkdirSync(GENERATED_DIR, { recursive: true });
+function writeGenerated(courses, generatedAt, generatedDir = GENERATED_DIR) {
+  fs.mkdirSync(generatedDir, { recursive: true });
   fs.writeFileSync(
-    path.join(GENERATED_DIR, "README.md"),
+    path.join(generatedDir, "README.md"),
     "GENERATED — never hand-edit. Regenerate with `npm run generate-catalog`.\n",
   );
   const catalog = { schemaVersion: CATALOG_SCHEMA_VERSION, generatedAt, courses };
   fs.writeFileSync(
-    path.join(GENERATED_DIR, "catalog.json"),
+    path.join(generatedDir, "catalog.json"),
     `${JSON.stringify(catalog, null, 2)}\n`,
   );
   fs.writeFileSync(
-    path.join(GENERATED_DIR, "search-index.json"),
+    path.join(generatedDir, "search-index.json"),
     `${JSON.stringify(buildSearchIndex(courses, generatedAt), null, 2)}\n`,
   );
+}
+
+async function runGeneration({
+  registry,
+  ajv = createAjv(),
+  fetchImpl = fetch,
+  generatedDir = GENERATED_DIR,
+  validateOnly = false,
+}) {
+  const { valid, errors } = validateRegistry(registry, ajv);
+  if (!valid) return { ok: false, phase: "registry", errors };
+
+  const { courses, failures } = await loadPublishedCourses(registry, ajv, fetchImpl);
+  if (failures.length > 0) return { ok: false, phase: "manifest", errors: failures };
+  if (validateOnly) return { ok: true, phase: "validate", courses };
+
+  const generatedAt = new Date().toISOString();
+  writeGenerated(courses, generatedAt, generatedDir);
+  return { ok: true, phase: "generate", courses, generatedAt };
 }
 
 function readRegistry() {
@@ -171,39 +232,45 @@ function readRegistry() {
 
 async function main(argv) {
   const validateOnly = argv.includes("--validate-only");
-  const registry = readRegistry();
-  const ajv = createAjv();
-
-  const { valid, errors } = validateRegistry(registry, ajv);
-  if (!valid) {
-    console.error(`registry invalid (${errors.length} error(s)):`);
-    for (const error of errors) console.error(`  ${error}`);
+  let registry;
+  try {
+    registry = readRegistry();
+  } catch (error) {
+    console.error(error.message);
     process.exitCode = 1;
     return;
   }
 
-  const { courses, failures } = await loadPublishedCourses(registry, ajv);
-  if (failures.length > 0) {
-    console.error(`\n${failures.length} published course manifest(s) failed:`);
-    for (const failure of failures) console.error(`  ${failure}`);
+  const result = await runGeneration({ registry, validateOnly });
+  if (!result.ok) {
+    if (result.phase === "registry") {
+      console.error(`registry invalid (${result.errors.length} error(s)):`);
+    } else {
+      console.error(`\n${result.errors.length} published course manifest(s) failed:`);
+    }
+    for (const error of result.errors) console.error(`  ${error}`);
     process.exitCode = 1;
     return;
   }
 
-  const published = registry.filter((entry) => entry.status === "published").length;
   if (validateOnly) {
+    const published = registry.filter((entry) => entry.status === "published").length;
     console.log(`validate: OK (${registry.length} entries, ${published} published)`);
     return;
   }
 
-  const generatedAt = new Date().toISOString();
-  writeGenerated(courses, generatedAt);
   console.log(
-    `generated: generated/catalog.json + generated/search-index.json (${courses.length} courses)`,
+    `generated: generated/catalog.json + generated/search-index.json (${result.courses.length} courses)`,
   );
 }
 
-module.exports = { createAjv, loadSchemas, validateRegistry };
+module.exports = {
+  createAjv,
+  loadSchemas,
+  loadPublishedCourses,
+  runGeneration,
+  validateRegistry,
+};
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch((error) => {

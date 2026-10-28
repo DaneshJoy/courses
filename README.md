@@ -1,8 +1,9 @@
 # Courses Portal
 
 Static, data-driven course-discovery portal (Vite + React 19 + TypeScript).
-Persian/RTL-first; the app renders only from build-time generated catalog data
-and never fetches course manifests at runtime.
+Persian/RTL-first; the app will render from build-time generated catalog data
+(wiring lands in a later Phase-1 task) and never fetches course manifests at
+runtime.
 
 ## Commands
 

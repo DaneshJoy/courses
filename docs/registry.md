@@ -1,7 +1,7 @@
 # Course Registry
 
-`courses/data/courses.json` is the portal's only build-time input. It is a JSON
-array of course entries; an absent course is simply not listed.
+`data/courses.json` is the portal's only build-time input. It is a JSON array of
+course entries; an absent course is simply not listed.
 
 ## Registry entry
 
@@ -19,30 +19,41 @@ array of course entries; an absent course is simply not listed.
 | `id`          | yes      | Lowercase ASCII slug (`^[a-z0-9]+(-[a-z0-9]+)*$`); unique. Persian only in titles, never IDs/URLs. |
 | `manifestUrl` | yes      | Absolute HTTPS URL of the course's `course.json`.                  |
 | `status`      | yes      | `published`, `unlisted`, or `archived`. Only `published` is fetched into the catalog. |
-| `featured`    | no       | Boolean; optional display hint.                                    |
+| `featured`    | no       | Boolean; optional display hint, carried into the catalog course when true. |
 
-The schema is `courses/schemas/course-registry.schema.json`; duplicate IDs are
-rejected by the generator because JSON Schema cannot express uniqueness across
-array items.
+The schema is `schemas/course-registry.schema.json`; duplicate IDs are rejected
+by the generator because JSON Schema cannot express uniqueness across array
+items.
 
 ## Course manifest (`course.json`)
 
 Each published course repo ships a manifest validated against
-`courses/schemas/course-manifest.schema.json`. Required fields: `id`, `title`,
-`description`, `language` (BCP-47), `dir` (`rtl` | `ltr`), `level`, `category`,
-`tags` (array, may be empty), `lectures` (each `{id, title, order,
-durationMinutes, objectives, status}` with `status` = `draft` | `review` |
-`published`), `schemaVersion` (`"1.0.0"`), `templateVersion`, `license`, and
-`updatedAt` (ISO 8601 date or date-time). A published manifest must declare at
-least one lecture and its `id` must match the registry entry.
+`schemas/course-manifest.schema.json`. Required fields: `id`, `title`,
+`description`, `language`, `dir` (`rtl` | `ltr`), `level`, `category`, `tags`
+(array, may be empty), `lectures` (each `{id, title, order, durationMinutes,
+objectives, status}` with `status` = `draft` | `review` | `published`),
+`schemaVersion` (`"1.0.0"`), `templateVersion`, `license`, and `updatedAt`.
+
+A published manifest must declare at least one lecture, its `id` must match the
+registry entry, and lecture `id`s and `order` values must be unique within the
+manifest (React keys/order depend on them).
+
+Custom format subsets accepted by the validator:
+
+- `language`: primary subtag of 2–3 ASCII letters plus optional 2–8 character
+  alphanumeric subtags (`fa`, `fa-IR`, `en`, `zh-Hant-TW`). Not full BCP-47.
+- `updatedAt`: `YYYY-MM-DD` or a full date-time with `Z`/offset
+  (`2026-10-28T10:00:00Z`). Not week/ordinal ISO forms.
 
 ## Generated artifacts
 
 `npm run generate-catalog` (also run by `npm run build`) validates the registry
-and every published manifest, then writes, under `courses/generated/`:
+and every published manifest, then writes, under `generated/`:
 
 - `catalog.json`: `{ "schemaVersion", "generatedAt", "courses": [manifest...] }`
-  — the app imports this at build time; manifests are never fetched at runtime.
+  — a later Phase-1 task will import this at build time; the app never fetches
+  manifests at runtime. A course from a `featured: true` entry gains
+  `featured: true`.
 - `search-index.json`: `{ "schemaVersion", "generatedAt", "courses": [{id,
   title, description, tags, lectures: [{id, title, order}]}] }`.
 - `README.md`: generation marker. Never hand-edit these files.

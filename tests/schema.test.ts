@@ -50,4 +50,10 @@ describe("course registry validation", () => {
       "manifestUrl",
     );
   });
+
+  it("names unexpected entry properties", () => {
+    expect(errorsFor([{ ...validEntry, manifestURL: "https://example.com/course.json" }])).toContain(
+      "manifestURL",
+    );
+  });
 });
