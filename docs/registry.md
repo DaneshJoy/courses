@@ -1,8 +1,7 @@
 # Course registry and manifest contract
 
-`data/courses.json` is the canonical registry for the portal and is currently
-an empty array. Add a course by adding one registry entry; do not hand-edit the
-generated catalog.
+`data/courses.json` is the canonical registry for the portal. Add a course by
+adding one registry entry; do not hand-edit the generated catalog.
 
 ## Registry entry
 
