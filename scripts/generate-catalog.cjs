@@ -234,6 +234,29 @@ function readRegistry() {
 }
 
 async function main(argv) {
+  const manifestIndex = argv.indexOf("--validate-manifest");
+  if (manifestIndex !== -1) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(path.resolve(argv[manifestIndex + 1]), "utf8"));
+      const validate = createAjv().compile(loadSchemas().manifest);
+      if (!validate(manifest)) {
+        for (const error of validate.errors) console.error(`${error.instancePath || "/"}: ${describeAjvError(error)}`);
+        process.exitCode = 1;
+        return;
+      }
+      const lectureErrors = validateLectureUniqueness(manifest.lectures);
+      if (lectureErrors.length) {
+        for (const error of lectureErrors) console.error(error);
+        process.exitCode = 1;
+        return;
+      }
+      console.log(`manifest valid: ${manifest.id} (${manifest.lectures.length} lectures)`);
+    } catch (error) {
+      console.error(`manifest invalid: ${error.message}`);
+      process.exitCode = 1;
+    }
+    return;
+  }
   const validateOnly = argv.includes("--validate-only");
   let registry;
   try {
