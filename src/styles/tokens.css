@@ -3,12 +3,14 @@
   color-scheme: light dark;
 
   --font-family-base: "Vazirmatn", system-ui, sans-serif;
+  --font-family-code: ui-monospace, "Courier New", Consolas, monospace;
 
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.75rem;
-  --line-height-base: 1.75;
+  --font-size-hero: clamp(1.875rem, 5vw, 3.5rem);
+  --line-height-base: 1.85;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -16,17 +18,30 @@
   --space-4: 1.5rem;
   --space-5: 2.5rem;
 
-  --color-bg: light-dark(#f6f7f9, #0f1218);
-  --color-surface: light-dark(#ffffff, #171b24);
-  --color-text: light-dark(#1a1c22, #e7eaf0);
-  --color-muted: light-dark(#5b6270, #9aa2b1);
-  --color-accent: light-dark(#1f6feb, #7aa7ff);
-  --color-border: light-dark(#dde1e8, #2a3040);
+  --color-bg: light-dark(#f5f7fa, #0d1117);
+  --color-surface: light-dark(#eef2f6, #161b22);
+  --color-card: light-dark(#ffffff, #1c2333);
+  --color-text: light-dark(#1a1a2e, #e6edf3);
+  --color-muted: light-dark(#5a6a7a, #8b949e);
+  --color-accent: light-dark(#00a67e, #00d9a6);
+  --color-accent2: light-dark(#2f6fe0, #4f9cf9);
+  --color-accent3: light-dark(#d6336c, #f06292);
+  --color-warn: light-dark(#b7791f, #e6b432);
+  --color-danger: light-dark(#d93636, #ff5c5c);
+  --color-border: light-dark(#d1d9e8, #30363d);
+
+  /* light-dark() only takes colors, so the gradient gets a [data-theme] override. */
+  --gradient: linear-gradient(135deg, #0d1117 0%, #0a1628 50%, #0d1a14 100%);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
+  --radius-lg: 1rem;
 }
 
 [data-theme="light"] {
   color-scheme: light;
+  --gradient: linear-gradient(135deg, #f8f9fa 0%, #edf2f7 50%, #eef3ef 100%);
+  --shadow: 0 8px 24px rgba(30, 40, 70, 0.1);
 }
 
 [data-theme="dark"] {
