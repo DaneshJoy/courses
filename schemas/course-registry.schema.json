@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Course registry",
+  "description": "data/courses.json: the portal's only build-time input.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "manifestUrl", "status"],
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "description": "Stable lowercase ASCII slug; Persian belongs in titles, never in IDs or URLs.",
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "manifestUrl": {
+        "description": "Absolute HTTPS URL of the course's course.json.",
+        "type": "string",
+        "format": "https-url"
+      },
+      "status": {
+        "description": "Only 'published' is fetched into the public catalog.",
+        "enum": ["published", "unlisted", "archived"]
+      },
+      "featured": {
+        "type": "boolean"
+      }
+    }
+  }
+}

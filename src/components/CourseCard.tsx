@@ -1,0 +1,2 @@
+import type { Course } from "../lib/types";
+export function CourseCard({ course }: { course: Course }) { return <article className="course-card" dir={course.dir} lang={course.language}><p className="course-card__meta">{course.category} · {course.level}</p><h2>{course.title}</h2><p>{course.description}</p><ul className="course-card__tags">{course.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul></article>; }
