@@ -13,7 +13,12 @@ test("renders the RTL landing page without overflow", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("searchbox")).toBeVisible();
   await expect(page.getByLabel("فیلترها")).toBeVisible();
-  await expect(page.locator("article.course-card").first()).toBeVisible();
+  await expect(page.getByLabel("مرکز آموزشی")).toBeVisible();
+
+  const card = page.locator(".course-card").first();
+  await expect(card).toBeVisible();
+  await expect(card).toHaveAttribute("href", /ai_bme_intro/);
+  await expect(card).toContainText("دانشگاه شاهد");
 
   const themeToggle = page.getByRole("button", { name: "تغییر پوسته" });
   await themeToggle.click();

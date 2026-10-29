@@ -17,12 +17,16 @@ adding one registry entry; do not hand-edit the generated catalog.
 | Field | Required | Rules |
 | --- | --- | --- |
 | `id` | yes | Unique lowercase ASCII slug: `^[a-z0-9]+(-[a-z0-9]+)*$`. Use Persian in text fields, not IDs or URLs. |
-| `manifestUrl` | yes | Absolute HTTPS URL to the course's `course.json`. |
+| `manifestUrl` | yes | Absolute HTTPS URL to the course's `course.json`. The generator also derives the course site URL (`courseUrl`, the manifest URL minus `course.json`) for course-card links. |
 | `status` | yes | `published` is fetched and included in the public catalog; `unlisted` and `archived` are skipped by the generator. Archiving/removing an entry does not delete its course repository or site. |
 | `featured` | no | Boolean metadata copied to a published manifest when `true`; the current UI does not yet provide featured sections. |
+| `centers` | no | Array of teaching-center ids from `data/centers.json`; a course may list several. The generator copies the labels and site URL into the catalog and fails the build on an unknown id. |
 
 The registry schema is `schemas/course-registry.schema.json`. The generator
-also rejects duplicate IDs.
+also rejects duplicate IDs, merges the catalog with the teaching-center labels
+from `data/centers.json` (`{ "id": …, "name": … }` entries; ids must be unique,
+and every registry `centers` value must reference one of them), and exposes
+each known center as a `مرکز آموزشی` filter option.
 
 ## `course.json`
 

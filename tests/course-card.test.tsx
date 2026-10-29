@@ -17,6 +17,7 @@ const course: Course = {
   templateVersion: "1.0.0",
   license: "CC-BY-4.0",
   updatedAt: "2026-10-29",
+  courseUrl: "https://security.example.com/",
 };
 
 describe("CourseCard", () => {
@@ -29,5 +30,19 @@ describe("CourseCard", () => {
     expect(markup).toContain("&lt;strong&gt;Safe text&lt;/strong&gt;");
     expect(markup).not.toContain("<img");
     expect(markup).not.toContain("<strong>");
+  });
+
+  it("renders the whole card as a link to the course site and shows its centers", () => {
+    const markup = renderToStaticMarkup(
+      <CourseCard course={{ ...course, centers: ["دانشگاه شاهد"] }} />,
+    );
+
+    expect(markup.startsWith('<a class="course-card" href="https://security.example.com/"')).toBe(true);
+    expect(markup).toContain("دانشگاه شاهد · security · beginner");
+  });
+
+  it("renders the card meta without centers when none are assigned", () => {
+    const markup = renderToStaticMarkup(<CourseCard course={course} />);
+    expect(markup).toContain("security · beginner");
   });
 });

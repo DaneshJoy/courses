@@ -91,6 +91,38 @@ describe("catalog generation pipeline", () => {
     expect("featured" in result.courses[0]).toBe(false);
   });
 
+  it("resolves center ids to labels, derives courseUrl, and omits unset centers", async () => {
+    const withoutCenters = await generate([publishedEntry], async () => response(manifest));
+    expect(withoutCenters.ok).toBe(true);
+    expect("centers" in withoutCenters.courses[0]).toBe(false);
+    expect(withoutCenters.courses[0].courseUrl).toBe("https://example.com/");
+
+    const withCenters = await generate(
+      [{ ...publishedEntry, centers: ["shahed-university"] }],
+      async () => response(manifest),
+    );
+    expect(withCenters.ok).toBe(true);
+    expect(withCenters.courses[0].centers).toEqual(["دانشگاه شاهد"]);
+
+    const generatedDir = tempGeneratedDir();
+    await generate(
+      [{ ...publishedEntry, centers: ["shahed-university"] }],
+      async () => response(manifest),
+      generatedDir,
+    );
+    const catalog = JSON.parse(fs.readFileSync(path.join(generatedDir, "catalog.json"), "utf8"));
+    expect(catalog.centers).toContainEqual({ id: "shahed-university", name: "دانشگاه شاهد" });
+  });
+
+  it("fails on a registry center id that data/centers.json does not define", async () => {
+    const result = await generate(
+      [{ ...publishedEntry, centers: ["unknown-center"] }],
+      async () => response(manifest),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("unknown center id(s) unknown-center");
+  });
+
   it("fails when the manifest id differs from the registry id", async () => {
     const result = await generate([publishedEntry], async () =>
       response({ ...manifest, id: "other-course" }),

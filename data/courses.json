@@ -3,6 +3,7 @@
     "id": "ai-bme-intro",
     "manifestUrl": "https://daneshjoy.github.io/ai_bme_intro/course.json",
     "status": "published",
-    "featured": false
+    "featured": false,
+    "centers": ["shahed-university"]
   }
 ]

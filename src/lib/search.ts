@@ -34,7 +34,8 @@ export function filterCourses(courses: Course[], filters: Filters): Course[] {
       (filters.level === undefined || course.level === filters.level) &&
       (filters.language === undefined || course.language === filters.language) &&
       (filters.category === undefined || course.category === filters.category) &&
-      (filters.tags === undefined || filters.tags.every((tag) => course.tags.includes(tag))),
+      (filters.tags === undefined || filters.tags.every((tag) => course.tags.includes(tag))) &&
+      (filters.centers === undefined || (course.centers?.includes(filters.centers) ?? false)),
   );
 }
 
@@ -48,5 +49,7 @@ export function filtersFrom(courses: Course[]): FilterOptions {
     languages: uniqueSorted(courses.map((course) => course.language)),
     categories: uniqueSorted(courses.map((course) => course.category)),
     tags: uniqueSorted(courses.flatMap((course) => course.tags)),
+    // Center options come from the catalog-wide list (App merges centerOptions).
+    centers: [],
   };
 }

@@ -24,6 +24,15 @@
       },
       "featured": {
         "type": "boolean"
+      },
+      "centers": {
+        "description": "Teaching-center ids this course belongs to; must reference data/centers.json. A course may have zero, one, or many centers.",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "uniqueItems": true
       }
     }
   }

@@ -7,6 +7,7 @@ const Ajv = require("ajv");
 
 const ROOT = path.resolve(__dirname, "..");
 const REGISTRY_PATH = path.join(ROOT, "data", "courses.json");
+const CENTERS_PATH = path.join(ROOT, "data", "centers.json");
 const SCHEMA_DIR = path.join(ROOT, "schemas");
 const GENERATED_DIR = path.join(ROOT, "generated");
 const CATALOG_SCHEMA_VERSION = "1.0.0";
@@ -133,7 +134,7 @@ async function fetchManifest(url, fetchImpl = fetch) {
   }
 }
 
-async function loadPublishedCourses(registry, ajv, fetchImpl = fetch) {
+async function loadPublishedCourses(registry, ajv, fetchImpl = fetch, centers = readCenters()) {
   const validateManifest = ajv.compile(loadSchemas().manifest);
   const courses = [];
   const failures = [];
@@ -144,6 +145,12 @@ async function loadPublishedCourses(registry, ajv, fetchImpl = fetch) {
       continue;
     }
     try {
+      let resolvedCenters;
+      try {
+        resolvedCenters = resolveCenters(entry, centers);
+      } catch (error) {
+        throw new Error(`registry centers invalid: ${error.message}`);
+      }
       const manifest = await fetchManifest(entry.manifestUrl, fetchImpl);
       if (!validateManifest(manifest)) {
         const details = validateManifest.errors
@@ -164,7 +171,13 @@ async function loadPublishedCourses(registry, ajv, fetchImpl = fetch) {
         throw new Error("manifest invalid: published course must have at least one lecture");
       }
       console.log(`ok    ${entry.id} (${manifest.lectures.length} lectures)`);
-      courses.push(entry.featured === true ? { ...manifest, featured: true } : manifest);
+      const course = {
+        ...manifest,
+        courseUrl: courseUrl(entry.manifestUrl),
+        ...(resolvedCenters !== undefined ? { centers: resolvedCenters } : {}),
+        ...(entry.featured === true ? { featured: true } : {}),
+      };
+      courses.push(course);
     } catch (error) {
       const message = `course "${entry.id}": ${error.message}`;
       failures.push(message);
@@ -189,13 +202,13 @@ function buildSearchIndex(courses, generatedAt) {
   };
 }
 
-function writeGenerated(courses, generatedAt, generatedDir = GENERATED_DIR) {
+function writeGenerated(courses, centers, generatedAt, generatedDir = GENERATED_DIR) {
   fs.mkdirSync(generatedDir, { recursive: true });
   fs.writeFileSync(
     path.join(generatedDir, "README.md"),
     "GENERATED — never hand-edit. Regenerate with `npm run generate-catalog`.\n",
   );
-  const catalog = { schemaVersion: CATALOG_SCHEMA_VERSION, generatedAt, courses };
+  const catalog = { schemaVersion: CATALOG_SCHEMA_VERSION, generatedAt, centers, courses };
   fs.writeFileSync(
     path.join(generatedDir, "catalog.json"),
     `${JSON.stringify(catalog, null, 2)}\n`,
@@ -212,16 +225,18 @@ async function runGeneration({
   fetchImpl = fetch,
   generatedDir = GENERATED_DIR,
   validateOnly = false,
+  centers,
 }) {
+  const validCenters = centers ?? readCenters();
   const { valid, errors } = validateRegistry(registry, ajv);
   if (!valid) return { ok: false, phase: "registry", errors };
 
-  const { courses, failures } = await loadPublishedCourses(registry, ajv, fetchImpl);
+  const { courses, failures } = await loadPublishedCourses(registry, ajv, fetchImpl, validCenters);
   if (failures.length > 0) return { ok: false, phase: "manifest", errors: failures };
   if (validateOnly) return { ok: true, phase: "validate", courses };
 
   const generatedAt = new Date().toISOString();
-  writeGenerated(courses, generatedAt, generatedDir);
+  writeGenerated(courses, validCenters, generatedAt, generatedDir);
   return { ok: true, phase: "generate", courses, generatedAt };
 }
 
@@ -231,6 +246,49 @@ function readRegistry() {
   } catch (error) {
     throw new Error(`cannot read data/courses.json: ${error.message}`);
   }
+}
+
+// Centers are portal-owned labels (data/centers.json). Unknown ids, duplicate
+// ids, and malformed entries fail the build so typos never ship silently.
+function readCenters() {
+  let raw;
+  try {
+    raw = JSON.parse(fs.readFileSync(CENTERS_PATH, "utf8"));
+  } catch (error) {
+    throw new Error(`cannot read data/centers.json: ${error.message}`);
+  }
+  if (
+    !Array.isArray(raw) ||
+    raw.some(
+      (center) =>
+        center === null ||
+        typeof center !== "object" ||
+        typeof center.id !== "string" ||
+        typeof center.name !== "string" ||
+        center.name.trim() === "",
+    ) ||
+    new Set(raw.map((center) => center.id)).size !== raw.length
+  ) {
+    throw new Error("data/centers.json: each center needs a unique non-empty id and name");
+  }
+  return raw;
+}
+
+// Filter-time helper: courses without a centers field never match a center
+// filter, and center names (not ids) travel in the catalog.
+function resolveCenters(entry, centers) {
+  if (entry.centers === undefined) return undefined;
+  const known = new Map(centers.map((center) => [center.id, center.name]));
+  const unknown = entry.centers.filter((id) => !known.has(id));
+  if (unknown.length > 0) {
+    throw new Error(`unknown center id(s) ${unknown.join(", ")} — add them to data/centers.json`);
+  }
+  return entry.centers.map((id) => known.get(id));
+}
+
+// Course site URL: manifestUrl minus the course.json filename.
+function courseUrl(manifestUrl) {
+  return new URL(".", manifestUrl).href;
 }
 
 async function main(argv) {

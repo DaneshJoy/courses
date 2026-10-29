@@ -22,6 +22,8 @@ export interface Course {
   license: string;
   updatedAt: string;
   featured?: boolean;
+  courseUrl: string;
+  centers?: string[];
   [key: string]: unknown;
 }
 
@@ -30,6 +32,7 @@ export interface Filters {
   language?: string;
   category?: string;
   tags?: string[];
+  centers?: string;
 }
 
 export type SearchIndex = Map<string, Course[]>;
@@ -39,4 +42,5 @@ export interface FilterOptions {
   languages: string[];
   categories: string[];
   tags: string[];
+  centers: string[];
 }

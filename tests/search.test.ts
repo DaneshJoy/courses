@@ -11,6 +11,7 @@ const base: Course = {
   level: "beginner",
   category: "general",
   tags: [],
+  courseUrl: "https://base.example.com/",
   lectures: [
     { id: "lecture-1", title: "Intro", order: 1, durationMinutes: 30, objectives: [], status: "published" },
   ],
@@ -32,6 +33,7 @@ const ai = course({
   dir: "rtl",
   category: "ai",
   tags: ["ai", "medical"],
+  centers: ["دانشگاه شاهد", "جهاد دانشگاهی صنعتی شریف"],
 });
 
 const python = course({
@@ -138,6 +140,15 @@ describe("filterCourses", () => {
   it("combines filters", () => {
     expect(ids(filterCourses(courses, { level: "beginner", language: "fa" }))).toEqual(["ai-medical"]);
   });
+
+  it("matches a course that lists the selected center among its centers", () => {
+    expect(ids(filterCourses(courses, { centers: "دانشگاه شاهد" }))).toEqual(["ai-medical"]);
+    expect(ids(filterCourses(courses, { centers: "جهاد دانشگاهی صنعتی شریف" }))).toEqual(["ai-medical"]);
+  });
+
+  it("excludes courses without any centers", () => {
+    expect(filterCourses(courses, { centers: "مرکز ناشناخته" })).toEqual([]);
+  });
 });
 
 describe("filtersFrom", () => {
@@ -147,6 +158,7 @@ describe("filtersFrom", () => {
       languages: ["en", "fa"],
       categories: ["ai", "programming"],
       tags: ["ai", "medical", "ml", "programming", "python"],
+      centers: [],
     });
   });
 });
