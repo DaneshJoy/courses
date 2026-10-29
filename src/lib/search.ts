@@ -1,8 +1,9 @@
 import { normalizePersian } from "./normalize";
 import type { Course, FilterOptions, Filters, SearchIndex } from "./types";
 
+// Split on any run of non-letter/digit chars (Unicode-aware) so punctuation-attached words tokenize correctly.
 function tokenize(text: string): string[] {
-  return normalizePersian(text).split(" ").filter(Boolean);
+  return normalizePersian(text).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 }
 
 export function buildSearchIndex(courses: Course[]): SearchIndex {

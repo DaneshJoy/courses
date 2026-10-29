@@ -54,6 +54,16 @@ const advanced = course({
 });
 
 const courses = [ai, python, advanced];
+
+const circuits = course({
+  id: "circuits",
+  title: "مدار 2",
+  description: "آشنایی با مدارهای الکتریکی",
+  tags: ["electrical"],
+  lectures: [
+    { id: "lecture-2", title: "فقط-عنوان-لکتور", order: 1, durationMinutes: 45, objectives: [], status: "published" },
+  ],
+});
 const ids = (list: Course[]) => list.map((item) => item.id);
 
 describe("buildSearchIndex", () => {
@@ -76,6 +86,23 @@ describe("searchCourses", () => {
 
   it("matches a Latin-digit query against Persian digits in the title", () => {
     expect(ids(searchCourses(courses, "2"))).toEqual(["ai-medical"]);
+  });
+
+  it("matches a Persian-digit query against a Latin digit in the title", () => {
+    expect(ids(searchCourses([...courses, circuits], "مدار ۲"))).toEqual(["circuits"]);
+    expect(ids(searchCourses([...courses, circuits], "مدار 2"))).toEqual(["circuits"]);
+  });
+
+  it("matches a token that appears only in the description", () => {
+    expect(ids(searchCourses(courses, "learn"))).toEqual(["python-basics"]);
+  });
+
+  it("does not match a token found only in tags", () => {
+    expect(searchCourses(courses, "medical")).toEqual([]);
+  });
+
+  it("does not match a token found only in lecture titles", () => {
+    expect(searchCourses(courses, "intro")).toEqual([]);
   });
 
   it("finds the English course with a latin query", () => {

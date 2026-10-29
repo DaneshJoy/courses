@@ -41,4 +41,6 @@ ownership contract is:
   template update.
 
 Each course remains an independent sibling repository named `<course-id>`;
-never place it under this portal repository.
+never place it under this portal repository. Local repository and directory
+names (for example, `ai_bme_intro`) are conventions only; registry and manifest
+`id` values must be hyphen slugs and may differ from the directory name.

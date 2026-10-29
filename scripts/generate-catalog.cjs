@@ -119,8 +119,11 @@ async function fetchManifest(url, fetchImpl = fetch) {
   if (!response.ok) {
     throw new Error(`manifest unreachable (HTTP ${response.status})`);
   }
-  // Redirects keep the final URL; the first hop is https via the registry schema.
-  if (typeof response.url === "string" && !response.url.startsWith("https:")) {
+  if (typeof response.url !== "string") {
+    throw new Error(`manifest unreachable (redirect target unknown)`);
+  }
+  // Redirects keep the final URL; require an https final URL.
+  if (!response.url.startsWith("https:")) {
     throw new Error(`manifest unreachable (redirected to non-https URL ${response.url})`);
   }
   try {

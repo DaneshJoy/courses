@@ -27,10 +27,15 @@ the test suite. CI installs Chromium with its system dependencies.
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the Vite development server. |
+| `npm run generate-catalog` | Validate the registry and manifests, then write the generated artifacts. |
 | `npm run validate` | Validate the registry and published manifests without writing files. |
 | `npm run build` | Generate the catalog, type-check, and build `dist/`. |
 | `npm run test` | Run Vitest and Playwright tests. |
 | `npm run check` | Run validation, build, and tests. |
+
+After a fresh clone, run `npm run generate-catalog` (or `npm run build`) before
+`npm run dev`: `generated/` is gitignored, so the catalog artifacts do not exist
+until the generator writes them.
 
 Vite uses `PORTAL_BASE` for its base path and defaults to `/courses/`:
 

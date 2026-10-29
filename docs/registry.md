@@ -38,9 +38,10 @@ and `status` (`draft`, `review`, or `published`). A published course must have
 at least one lecture; lecture IDs and order values must be unique. The manifest
 ID must match its registry ID.
 
-`language` accepts a practical BCP-47 subset such as `fa`, `fa-IR`, `en`, or
-`zh-Hant-TW`. `updatedAt` accepts `YYYY-MM-DD` or an ISO date-time with a `Z` or
-numeric offset.
+`language` accepts a practical subset of BCP-47 tags, not full BCP-47: current
+accepted examples are `fa`, `fa-IR`, `en`, and `zh-Hant-TW`; the schema may
+reject other forms that are valid BCP-47. `updatedAt` accepts `YYYY-MM-DD` or an
+ISO date-time with a `Z` or numeric offset.
 
 ## Generation and failure behavior
 
@@ -60,5 +61,8 @@ generated catalog and does not fetch manifests at runtime.
 
 Course repositories are independent sibling directories named `<course-id>`
 (for example, `ai_bme_intro` locally), never directories inside `courses/`.
+Local repository and directory names are conventions only; registry and
+manifest `id` values must remain hyphen slugs (`^[a-z0-9]+(-[a-z0-9]+)*$`) and
+may differ from the directory name.
 This portal has no course template or authoring pipeline yet; this document
 describes only the manifest contract it already validates.
