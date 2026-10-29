@@ -123,6 +123,16 @@ describe("catalog generation pipeline", () => {
     expect(result.errors.join("\n")).toContain("unknown center id(s) unknown-center");
   });
 
+  it("fails fast on unknown center ids even when the entry is not published", async () => {
+    const result = await generate(
+      [{ ...publishedEntry, status: "archived", centers: ["unknown-center"] }],
+      async () => response(manifest),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("entry[0]");
+    expect(result.errors.join("\n")).toContain("unknown center id(s) unknown-center");
+  });
+
   it("fails when the manifest id differs from the registry id", async () => {
     const result = await generate([publishedEntry], async () =>
       response({ ...manifest, id: "other-course" }),

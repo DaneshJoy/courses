@@ -231,6 +231,19 @@ async function runGeneration({
   const { valid, errors } = validateRegistry(registry, ajv);
   if (!valid) return { ok: false, phase: "registry", errors };
 
+  // Fail fast on center typos even in unlisted/archived entries.
+  const centersErrors = [];
+  registry.forEach((entry, index) => {
+    if (entry !== null && typeof entry === "object" && entry.centers !== undefined) {
+      try {
+        resolveCenters(entry, validCenters);
+      } catch (error) {
+        centersErrors.push(`entry[${index}]: ${error.message}`);
+      }
+    }
+  });
+  if (centersErrors.length > 0) return { ok: false, phase: "registry", errors: centersErrors };
+
   const { courses, failures } = await loadPublishedCourses(registry, ajv, fetchImpl, validCenters);
   if (failures.length > 0) return { ok: false, phase: "manifest", errors: failures };
   if (validateOnly) return { ok: true, phase: "validate", courses };
