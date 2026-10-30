@@ -33,6 +33,10 @@
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
         },
         "uniqueItems": true
+      },
+      "localPath": {
+        "description": "Optional relative or absolute path to a local course.json file for offline development. It is used only when PORTAL_LOCAL=1.",
+        "type": "string"
       }
     }
   }

@@ -43,6 +43,10 @@ Vite uses `PORTAL_BASE` for its base path and defaults to `/courses/`:
 PORTAL_BASE=/courses/ npm run build
 ```
 
+For offline development beside local course repositories, set `localPath` in
+the registry and use `npm run dev:local`. Local commands read each course's
+`course.json`; normal GitHub validation/build/deployment uses `manifestUrl`.
+
 ## Catalog data
 
 `data/courses.json` is the canonical registry. During validation/build, each

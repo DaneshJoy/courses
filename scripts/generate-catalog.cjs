@@ -13,6 +13,9 @@ const GENERATED_DIR = path.join(ROOT, "generated");
 const CATALOG_SCHEMA_VERSION = "1.0.0";
 const FETCH_TIMEOUT_MS = 15_000;
 
+// Offline mode configuration
+const LOCAL_BASE_DIR = ROOT;
+
 function createAjv() {
   const ajv = new Ajv({ allErrors: true });
   ajv.addFormat("https-url", (value) => {
@@ -32,6 +35,38 @@ function createAjv() {
     return iso.test(value) && !Number.isNaN(Date.parse(value));
   });
   return ajv;
+}
+
+function resolveLocalManifestPath(entry) {
+  if (!entry.localPath) return null;
+  let resolvedPath;
+  if (path.isAbsolute(entry.localPath)) {
+    resolvedPath = entry.localPath;
+  } else {
+    resolvedPath = path.resolve(LOCAL_BASE_DIR, entry.localPath);
+  }
+  // If it points to a directory, append course.json
+  try {
+    const stat = fs.statSync(resolvedPath);
+    if (stat.isDirectory()) {
+      resolvedPath = path.join(resolvedPath, "course.json");
+    }
+  } catch {
+    // not a directory or path doesn't exist; keep as file path
+  }
+  if (fs.existsSync(resolvedPath)) {
+    return resolvedPath;
+  }
+  return null;
+}
+
+function readLocalManifest(filePath) {
+  const raw = fs.readFileSync(filePath, "utf8");
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error(`invalid JSON in local manifest ${filePath}`);
+  }
 }
 
 function loadSchemas() {
@@ -134,7 +169,13 @@ async function fetchManifest(url, fetchImpl = fetch) {
   }
 }
 
-async function loadPublishedCourses(registry, ajv, fetchImpl = fetch, centers = readCenters()) {
+async function loadPublishedCourses(
+  registry,
+  ajv,
+  fetchImpl = fetch,
+  centers = readCenters(),
+  localOnly = process.env.PORTAL_LOCAL === "1",
+) {
   const validateManifest = ajv.compile(loadSchemas().manifest);
   const courses = [];
   const failures = [];
@@ -151,7 +192,22 @@ async function loadPublishedCourses(registry, ajv, fetchImpl = fetch, centers = 
       } catch (error) {
         throw new Error(`registry centers invalid: ${error.message}`);
       }
-      const manifest = await fetchManifest(entry.manifestUrl, fetchImpl);
+
+      let manifest;
+      const localManifestPath = localOnly ? resolveLocalManifestPath(entry) : null;
+
+      if (localOnly && !localManifestPath) {
+        throw new Error(`PORTAL_LOCAL=1 but no local manifest found at ${entry.localPath ?? "(no localPath)"}`);
+      }
+
+      if (localManifestPath) {
+        console.log(`local ${entry.id} from ${localManifestPath}`);
+        manifest = readLocalManifest(localManifestPath);
+      } else {
+        console.log(`fetch ${entry.id} from ${entry.manifestUrl}`);
+        manifest = await fetchManifest(entry.manifestUrl, fetchImpl);
+      }
+
       if (!validateManifest(manifest)) {
         const details = validateManifest.errors
           .map((error) => `${error.instancePath || "/"}: ${describeAjvError(error)}`)

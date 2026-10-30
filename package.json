@@ -8,12 +8,17 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:local": "PORTAL_LOCAL=1 npm run generate-catalog && vite",
     "build": "npm run generate-catalog && tsc --noEmit && vite build",
+    "build:local": "sh -c 'PORTAL_LOCAL=1 npm run generate-catalog && tsc --noEmit && vite build'",
     "preview": "vite preview",
     "generate-catalog": "node scripts/generate-catalog.cjs",
+    "generate-catalog:local": "PORTAL_LOCAL=1 node scripts/generate-catalog.cjs",
     "validate": "node scripts/generate-catalog.cjs --validate-only",
+    "validate:local": "PORTAL_LOCAL=1 node scripts/generate-catalog.cjs --validate-only",
     "test": "vitest run tests/*.test.ts tests/*.test.tsx && playwright test",
-    "check": "npm run validate && npm run build && npm run test"
+    "check": "npm run validate && npm run build && npm run test",
+    "check:local": "npm run validate:local && npm run build:local && npm run test"
   },
   "dependencies": {
     "react": "^19.3.1",

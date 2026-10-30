@@ -18,6 +18,7 @@ adding one registry entry; do not hand-edit the generated catalog.
 | --- | --- | --- |
 | `id` | yes | Unique lowercase ASCII slug: `^[a-z0-9]+(-[a-z0-9]+)*$`. Use Persian in text fields, not IDs or URLs. |
 | `manifestUrl` | yes | Absolute HTTPS URL to the course's `course.json`. The generator also derives the course site URL (`courseUrl`, the manifest URL minus `course.json`) for course-card links. |
+| `localPath` | no | Path to a local `course.json`, relative to the portal directory or absolute. Used only by `PORTAL_LOCAL=1`; online/GitHub builds always use `manifestUrl`. |
 | `status` | yes | `published` is fetched and included in the public catalog; `unlisted` and `archived` are skipped by the generator. Archiving/removing an entry does not delete its course repository or site. |
 | `featured` | no | Boolean metadata copied to a published manifest when `true`; the current UI does not yet provide featured sections. |
 | `centers` | no | Array of teaching-center ids from `data/centers.json`; a course may list several. The generator copies the labels and site URL into the catalog and fails the build on an unknown id. |
@@ -69,3 +70,7 @@ manifest `id` values must remain hyphen slugs (`^[a-z0-9]+(-[a-z0-9]+)*$`) and
 may differ from the directory name.
 This portal has no course template or authoring pipeline yet; this document
 describes only the manifest contract it already validates.
+
+For fully offline local development, use `npm run validate:local`,
+`npm run generate-catalog:local`, or `npm run dev:local`. In this mode each
+published entry must have an existing `localPath`; no network request is made.

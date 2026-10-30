@@ -56,6 +56,15 @@ function tempGeneratedDir(): string {
   return path.join(root, "generated");
 }
 
+function setupRegistryEntryWithLocalPath(localPath: string) {
+  return {
+    id: "ai-foundations",
+    manifestUrl: "https://example.com/course.json",
+    localPath: localPath,
+    status: "published",
+  };
+}
+
 afterEach(() => {
   for (const dir of tempDirs.splice(0)) {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -226,5 +235,73 @@ describe("catalog generation pipeline", () => {
     expect(calls).toBe(0);
     expect(result.ok).toBe(true);
     expect(result.courses).toEqual([]);
+  });
+
+  it("fails with PORTAL_LOCAL=1 and missing local manifest", async () => {
+    const generatedDir = tempGeneratedDir();
+    const originalEnv = process.env.PORTAL_LOCAL;
+    process.env.PORTAL_LOCAL = "1";
+
+    const result = await generate(
+      [{ ...publishedEntry, localPath: "nonexistent-course.json" }],
+      async () => response(manifest),
+      generatedDir,
+    );
+
+    // Restore environment
+    if (originalEnv === undefined) {
+      delete process.env.PORTAL_LOCAL;
+    } else {
+      process.env.PORTAL_LOCAL = originalEnv;
+    }
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain('PORTAL_LOCAL=1 but no local manifest found');
+  });
+
+  it("uses local manifest when localPath exists and PORTAL_LOCAL=1", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "local-manifest-test-"));
+    const courseJsonPath = path.join(tempDir, "course.json");
+    fs.writeFileSync(courseJsonPath, JSON.stringify(manifest));
+
+    const localEntry = setupRegistryEntryWithLocalPath(courseJsonPath);
+    const originalEnv = process.env.PORTAL_LOCAL;
+    process.env.PORTAL_LOCAL = "1";
+
+    const result = await generate([localEntry], async () => {
+      throw new Error("Should not be called when local path exists");
+    });
+
+    // Restore environment
+    if (originalEnv === undefined) {
+      delete process.env.PORTAL_LOCAL;
+    } else {
+      process.env.PORTAL_LOCAL = originalEnv;
+    }
+
+    // Cleanup temp dir
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    expect(result.ok).toBe(true);
+    expect(result.courses).toHaveLength(1);
+    expect(result.courses[0]).toMatchObject({ id: "ai-foundations" });
+  });
+
+  it("uses remote manifest when PORTAL_LOCAL is not enabled", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "local-prefer-test-"));
+    const courseJsonPath = path.join(tempDir, "course.json");
+    fs.writeFileSync(courseJsonPath, JSON.stringify(manifest));
+
+    const localEntry = { ...publishedEntry, localPath: courseJsonPath };
+
+    // Without PORTAL_LOCAL, the remote manifest remains the source of truth.
+    const result = await generate([localEntry], async () => response(manifest));
+
+    // Cleanup temp dir
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    expect(result.ok).toBe(true);
+    expect(result.courses).toHaveLength(1);
+    expect(result.courses[0].courseUrl).toBe("https://example.com/");
   });
 });
