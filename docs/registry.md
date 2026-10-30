@@ -8,7 +8,8 @@ adding one registry entry; do not hand-edit the generated catalog.
 ```json
 {
   "id": "ai-bme-intro",
-  "manifestUrl": "https://example.github.io/ai-bme-intro/course.json",
+  "manifestUrl": "https://daneshjoy.github.io/ai_bme_intro/course.json",
+  "localPath": "../ai_bme_intro/course.json",
   "status": "published",
   "featured": false
 }
@@ -18,7 +19,7 @@ adding one registry entry; do not hand-edit the generated catalog.
 | --- | --- | --- |
 | `id` | yes | Unique lowercase ASCII slug: `^[a-z0-9]+(-[a-z0-9]+)*$`. Use Persian in text fields, not IDs or URLs. |
 | `manifestUrl` | yes | Absolute HTTPS URL to the course's `course.json`. The generator also derives the course site URL (`courseUrl`, the manifest URL minus `course.json`) for course-card links. |
-| `localPath` | no | Path to a local `course.json`, relative to the portal directory or absolute. Used only by `PORTAL_LOCAL=1`; online/GitHub builds always use `manifestUrl`. |
+| `localPath` | no | Path to a local `course.json`, relative to the portal directory or absolute. Used only by strict local commands (`PORTAL_LOCAL=1`); normal online/GitHub commands ignore it and use `manifestUrl`. |
 | `status` | yes | `published` is fetched and included in the public catalog; `unlisted` and `archived` are skipped by the generator. Archiving/removing an entry does not delete its course repository or site. |
 | `featured` | no | Boolean metadata copied to a published manifest when `true`; the current UI does not yet provide featured sections. |
 | `centers` | no | Array of teaching-center ids from `data/centers.json`; a course may list several. The generator copies the labels and site URL into the catalog and fails the build on an unknown id. |
@@ -49,9 +50,16 @@ ISO date-time with a `Z` or numeric offset.
 
 ## Generation and failure behavior
 
-`npm run validate` validates the registry and fetches/validates every
-`published` manifest without writing output. `npm run generate-catalog` (run by
-`npm run build`) writes these ignored artifacts under `generated/`:
+Normal commands use the remote source of truth: `npm run validate` validates
+the registry and fetches/validates every `published` manifest without writing
+output. `npm run generate-catalog` (run by `npm run build`) writes these ignored
+artifacts under `generated/`:
+
+Local commands require `localPath` for every published entry and never fall back
+to the network: `npm run validate:local`, `npm run generate-catalog:local`,
+`npm run build:local`, and `npm run check:local`. Use `npm run dev:local` to
+generate the local catalog and start Vite. Relative `localPath` values are
+resolved from the portal repository root.
 
 - `catalog.json`: version, generation timestamp, and validated course manifests
   (including `featured: true` when requested).
@@ -59,9 +67,11 @@ ISO date-time with a `Z` or numeric offset.
 - `README.md`: a generated-file marker.
 
 If a published manifest is unavailable, invalid, mismatched, or has invalid
-lecture uniqueness, validation fails with the course ID and the build fails.
+lecture uniqueness, validation fails with the course ID and generation fails.
 Non-published entries are logged as skipped. The static application uses the
-generated catalog and does not fetch manifests at runtime.
+generated catalog and does not fetch manifests at runtime. Normal mode requires
+reachable published `manifestUrl` values; local mode requires readable
+`localPath` files and never silently falls back between sources.
 
 Course repositories are independent sibling directories named `<course-id>`
 (for example, `ai_bme_intro` locally), never directories inside `courses/`.
@@ -70,7 +80,3 @@ manifest `id` values must remain hyphen slugs (`^[a-z0-9]+(-[a-z0-9]+)*$`) and
 may differ from the directory name.
 This portal has no course template or authoring pipeline yet; this document
 describes only the manifest contract it already validates.
-
-For fully offline local development, use `npm run validate:local`,
-`npm run generate-catalog:local`, or `npm run dev:local`. In this mode each
-published entry must have an existing `localPath`; no network request is made.

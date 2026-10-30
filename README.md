@@ -6,11 +6,10 @@ It is built with React, TypeScript, and Vite, and is published at
 https://daneshjoy.github.io/courses/.
 
 It currently provides a landing catalog with Persian-aware search and filters,
-theme switching, RTL support, and loading, empty, and error states. The
-canonical registry is intentionally empty, so the deployed catalog has no
-courses until published entries are added. Course detail pages, featured/recent
-sections, learning paths, and a course-site template are not part of this
-initial portal skeleton.
+theme switching, RTL support, and loading, empty, and error states. The canonical
+registry is `data/courses.json`; published course manifests are loaded at build
+time. Course detail pages, featured/recent sections, learning paths, and a
+course-site template are not part of this initial portal skeleton.
 
 ## Local development
 
@@ -26,12 +25,17 @@ the test suite. CI installs Chromium with its system dependencies.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the Vite development server. |
-| `npm run generate-catalog` | Validate the registry and manifests, then write the generated artifacts. |
-| `npm run validate` | Validate the registry and published manifests without writing files. |
-| `npm run build` | Generate the catalog, type-check, and build `dist/`. |
+| `npm run dev` | Start Vite using the latest generated catalog (remote manifests are not fetched by the dev server). |
+| `npm run dev:local` | Generate from local course manifests in strict offline mode, then start Vite. |
+| `npm run generate-catalog` | Fetch and validate published remote manifests, then write generated artifacts. |
+| `npm run generate-catalog:local` | Validate local manifests and write generated artifacts without network access. |
+| `npm run validate` | Validate the registry and published remote manifests without writing files. |
+| `npm run validate:local` | Validate local manifests without network access or output writes. |
+| `npm run build` | Generate from remote manifests, type-check, and build `dist/`. |
+| `npm run build:local` | Generate from local manifests in strict offline mode, type-check, and build `dist/`. |
 | `npm run test` | Run Vitest and Playwright tests. |
-| `npm run check` | Run validation, build, and tests. |
+| `npm run check` | Run remote validation, build, and tests. |
+| `npm run check:local` | Run local validation, build, and tests. |
 
 After a fresh clone, run `npm run generate-catalog` (or `npm run build`) before
 `npm run dev`: `generated/` is gitignored, so the catalog artifacts do not exist
@@ -43,17 +47,22 @@ Vite uses `PORTAL_BASE` for its base path and defaults to `/courses/`:
 PORTAL_BASE=/courses/ npm run build
 ```
 
-For offline development beside local course repositories, set `localPath` in
-the registry and use `npm run dev:local`. Local commands read each course's
-`course.json`; normal GitHub validation/build/deployment uses `manifestUrl`.
+For offline development beside local course repositories, add `localPath` to
+each published registry entry and use `npm run dev:local`. `localPath` is
+resolved relative to the portal directory (or may be absolute) and points to the
+course's `course.json`; for example, `../ai_bme_intro/course.json`. Strict local
+commands fail if any published course has no readable local manifest. They do
+not fall back to the network. Normal validation/build/deployment ignores
+`localPath` and uses the HTTPS `manifestUrl`.
 
 ## Catalog data
 
-`data/courses.json` is the canonical registry. During validation/build, each
-`published` registry entry has its remote `course.json` fetched and validated.
-The generator writes `generated/catalog.json` and `generated/search-index.json`;
-the runtime application imports those local artifacts and never fetches course
-manifests.
+`data/courses.json` is the canonical registry. Normal validation/build fetches
+each published entry's HTTPS `manifestUrl` and validates it. Strict local
+commands instead read the entry's `localPath`. Both modes validate manifests
+against the same schema and write `generated/catalog.json` and
+`generated/search-index.json`; the runtime application imports those artifacts
+and never fetches course manifests.
 
 See [docs/registry.md](docs/registry.md) for the registry and manifest contract.
 Do not edit `generated/` or `dist/` by hand.
@@ -61,9 +70,8 @@ Do not edit `generated/` or `dist/` by hand.
 ## Deployment
 
 `.github/workflows/deploy.yml` deploys the static `dist/` artifact to GitHub
-Pages on pushes to `main`, manual dispatches, and a daily schedule. The workflow
-only runs its jobs for `main`, so changes on this `phase-1-skeleton` branch must
-be merged into `main` before a push-triggered deployment occurs.
+Pages on pushes to `main`, manual dispatches, and a daily schedule. Deployment
+runs the normal remote build from `manifestUrl`; `localPath` is ignored.
 
 ## Related repositories
 
