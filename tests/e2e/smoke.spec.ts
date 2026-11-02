@@ -31,8 +31,8 @@ test("renders the RTL landing page without overflow", async ({ page }) => {
 
   await shahedTab.click();
   await expect(page.locator(".course-card").first()).toBeVisible();
-  await expect(page.locator(".course-card")).toHaveCount(1);
-  await expect(page.locator(".course-card")).toContainText("دانشگاه شاهد");
+  await expect(page.locator(".course-card")).toHaveCount(2);
+  await expect(page.locator(".course-card")).toContainText(["دانشگاه شاهد", "دانشگاه شاهد"]);
   await otherTab.click();
   await expect(page.getByText("در حال حاضر هیچ دوره‌ای منتشر نشده است.")).toBeVisible();
   await jahadTab.click();

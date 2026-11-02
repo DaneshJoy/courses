@@ -14,5 +14,13 @@
     "status": "published",
     "featured": false,
     "centers": ["jahad-sharif"]
+  },
+  {
+    "id": "statistical-pattern-recognition",
+    "manifestUrl": "https://daneshjoy.github.io/spr/course.json",
+    "localPath": "../spr/course.json",
+    "status": "published",
+    "featured": false,
+    "centers": ["shahed-university"]
   }
 ]
