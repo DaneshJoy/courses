@@ -1,5 +1,5 @@
 import rawCatalog from "../../generated/catalog.json";
-import type { Course } from "./types";
+import type { Center, Course } from "./types";
 
 function isCourse(value: unknown): value is Course {
   if (typeof value !== "object" || value === null) return false;
@@ -26,15 +26,18 @@ export const catalogError =
 
 export const courses: Course[] = catalogError ? [] : (catalog.courses as Course[]);
 
-// Filter offers every known center, not only centers currently assigned.
-export const centerOptions: string[] = Array.isArray(catalog.centers)
-  ? uniqueStrings(catalog.centers.filter(isCenterEntry).map((center) => center.name))
+// Registered centers in data/centers.json order; drives the portal's center tabs.
+export const centers: Center[] = Array.isArray(catalog.centers)
+  ? catalog.centers.filter(isCenter)
   : [];
 
-function isCenterEntry(value: unknown): value is { name: string } {
-  return (
-    typeof value === "object" && value !== null && typeof (value as { name?: unknown }).name === "string"
-  );
+// Filter offers every known center, not only centers currently assigned.
+export const centerOptions: string[] = uniqueStrings(centers.map((center) => center.name));
+
+function isCenter(value: unknown): value is Center {
+  if (typeof value !== "object" || value === null) return false;
+  const center = value as Record<string, unknown>;
+  return typeof center.id === "string" && typeof center.name === "string";
 }
 
 function uniqueStrings(values: string[]): string[] {

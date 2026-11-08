@@ -30,6 +30,12 @@ from `data/centers.json` (`{ "id": …, "name": … }` entries; ids must be uniq
 and every registry `centers` value must reference one of them), and exposes
 each known center as a `مرکز آموزشی` filter option.
 
+The portal renders one tab per center in `data/centers.json` order: the center
+`id` is the tab identifier and the center `name` its label. A final
+`سایر آموزش ها` tab lists courses that name no registered center. Renaming a
+center therefore relabels its tab without a UI change, and removing a center
+that courses still reference fails the build until those entries are updated.
+
 ## `course.json`
 
 Every later course repository publishes `course.json`, validated against

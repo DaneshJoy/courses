@@ -5,11 +5,11 @@ for the [DaneshJoy courses organization](https://github.com/DaneshJoy/courses).
 It is built with React, TypeScript, and Vite, and is published at
 https://daneshjoy.github.io/courses/.
 
-It currently provides a landing catalog with Persian-aware search and filters,
-theme switching, RTL support, and loading, empty, and error states. The canonical
-registry is `data/courses.json`; published course manifests are loaded at build
-time. Course detail pages, featured/recent sections, learning paths, and a
-course-site template are not part of this initial portal skeleton.
+It currently provides a landing catalog with center tabs, Persian-aware search
+and filters, theme switching, RTL support, and loading, empty, and error states.
+The canonical registry is `data/courses.json`; published course manifests are
+loaded at build time. Course detail pages, featured/recent sections, learning
+paths, and a course-site template are not part of this initial portal skeleton.
 
 ## Local development
 
@@ -63,6 +63,11 @@ commands instead read the entry's `localPath`. Both modes validate manifests
 against the same schema and write `generated/catalog.json` and
 `generated/search-index.json`; the runtime application imports those artifacts
 and never fetches course manifests.
+
+Center tabs are generated too: the portal renders one tab per teaching center in
+`data/centers.json` order, followed by a final `سایر آموزش ها` tab for courses
+that name no registered center. Adding or renaming a center is a data change,
+not a UI change.
 
 See [docs/registry.md](docs/registry.md) for the registry and manifest contract.
 Do not edit `generated/` or `dist/` by hand.

@@ -7,6 +7,12 @@ export interface Lecture {
   status: "draft" | "review" | "published";
 }
 
+/** A teaching center registered in the portal's `data/centers.json`. */
+export interface Center {
+  id: string;
+  name: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -23,6 +29,7 @@ export interface Course {
   updatedAt: string;
   featured?: boolean;
   courseUrl: string;
+  /** Resolved center names copied into the catalog by the generator. */
   centers?: string[];
   [key: string]: unknown;
 }
