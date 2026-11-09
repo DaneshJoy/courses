@@ -33,6 +33,10 @@ function offlineBuildScript(sourceRoot) {
   return packageJson.scripts?.["build:offline"] ? "build:offline" : "build";
 }
 
+function courseError(entry, error) {
+  return new Error(`course "${entry.id}": ${error.message}`, { cause: error });
+}
+
 function assemblePackage({
   root = ROOT,
   registry = readRegistry(root),
@@ -47,10 +51,20 @@ function assemblePackage({
   for (const entry of courses) {
     const sourceRoot = courseRoot(root, entry);
     if (!sourceRoot) throw new Error(`course "${entry.id}": no localPath configured`);
-    runCommand("npm", ["run", offlineBuildScript(sourceRoot)], {
-      cwd: sourceRoot,
-      env: { ...process.env, OFFLINE: "1" },
-    });
+    let buildScript;
+    try {
+      buildScript = offlineBuildScript(sourceRoot);
+    } catch (error) {
+      throw courseError(entry, error);
+    }
+    try {
+      runCommand("npm", ["run", buildScript], {
+        cwd: sourceRoot,
+        env: { ...process.env, OFFLINE: "1" },
+      });
+    } catch (error) {
+      throw courseError(entry, error);
+    }
     const dist = path.join(sourceRoot, "dist");
     if (!fs.existsSync(dist)) {
       throw new Error(`course "${entry.id}": offline build output not found at ${dist}`);
