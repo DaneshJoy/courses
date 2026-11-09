@@ -24,6 +24,10 @@ test("assembles local portal and course builds beneath the archive root", () => 
     ];
     const commands = [];
     writeFile(path.join(courseRoot, "package.json"), JSON.stringify({ scripts: { build: "" } }));
+    const distIndex = `<!doctype html><html lang="fa" dir="rtl"><head>`
+      + `<script type="module" crossorigin src="./assets/app.js"></script>`
+      + `<link rel="stylesheet" crossorigin href="./assets/index-BdcsyWV1.css">`
+      + `</head><body><div id="root"></div></body></html>`;
 
     const result = assemblePackage({
       root,
@@ -32,7 +36,11 @@ test("assembles local portal and course builds beneath the archive root", () => 
       offlineDir,
       run(command, args, options) {
         commands.push({ command, args, options });
-        if (command === "npm" && options.cwd === root) writeFile(path.join(root, "dist", "index.html"));
+        if (command === "npm" && options.cwd === root) {
+          writeFile(path.join(root, "dist", "index.html"), distIndex);
+          writeFile(path.join(root, "dist", "assets", "app.js"), "console.log('offline');");
+          writeFile(path.join(root, "dist", "assets", "index-BdcsyWV1.css"), "body{color:black}\nurl(./Vazirmatn.woff2)");
+        }
         if (command === "npm" && options.cwd === courseRoot) writeFile(path.join(courseRoot, "dist", "index.html"));
         if (command === "python3") writeFile(args[2]);
       },
@@ -41,6 +49,10 @@ test("assembles local portal and course builds beneath the archive root", () => 
     assert.equal(fs.existsSync(path.join(stagingDir, "index.html")), true);
     assert.equal(fs.existsSync(path.join(stagingDir, "courses", "ai-foundations", "index.html")), true);
     assert.equal(result.archivePath, path.join(offlineDir, "teaching-hub-instructor.zip"));
+    const stagedIndex = fs.readFileSync(path.join(stagingDir, "index.html"), "utf8");
+    assert.match(stagedIndex, /<script type="module">console\.log\('offline'\);<\/script>/);
+    assert.doesNotMatch(stagedIndex, /<script[^>]*src=/);
+    assert.match(stagedIndex, /<style>body\{color:black\}\nurl\(\.\/assets\/Vazirmatn\.woff2\)<\/style>/);
     assert.deepEqual(commands[0], {
       command: "npm",
       args: ["run", "build"],
@@ -51,7 +63,7 @@ test("assembles local portal and course builds beneath the archive root", () => 
       args: ["run", "build:local"],
       options: {
         cwd: root,
-        env: { ...process.env, PORTAL_PACKAGE: "1", PORTAL_BASE: "./" },
+        env: { ...process.env, PORTAL_PACKAGE: "1", PORTAL_BASE: "./", PORTAL_OFFLINE: "1" },
       },
     });
     assert.equal(commands[2].command, "python3");

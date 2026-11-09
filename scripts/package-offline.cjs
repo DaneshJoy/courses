@@ -37,6 +37,21 @@ function courseError(entry, error) {
   return new Error(`course "${entry.id}": ${error.message}`, { cause: error });
 }
 
+function inlinePortalIndex(dist, stagingDir) {
+  const app = fs.readFileSync(path.join(dist, "assets", "app.js"), "utf8");
+  if (app.includes("</script>")) throw new Error("offline portal bundle contains </script>");
+  const stylesheet = fs.readdirSync(path.join(dist, "assets")).find((file) => file.endsWith(".css"));
+  if (!stylesheet) throw new Error("offline portal stylesheet not found");
+  const css = fs.readFileSync(path.join(dist, "assets", stylesheet), "utf8").replaceAll("url(./", "url(./assets/");
+  let index = fs.readFileSync(path.join(stagingDir, "index.html"), "utf8");
+  index = index.replace(/<script type="module"[^>]*src="\.\/assets\/app\.js"><\/script>\s*/, () => `<script type="module">${app}</script>\n`);
+  index = index.replace(new RegExp(`<link rel="stylesheet"[^>]*href="\\.\\/assets\\/${stylesheet}">`), () => `<style>${css}</style>`);
+  if (index.includes('src="./assets/app.js"') || index.includes(`href="./assets/${stylesheet}"`)) {
+    throw new Error("portal offline inlining failed: staged index.html still references external app.js or stylesheet");
+  }
+  fs.writeFileSync(path.join(stagingDir, "index.html"), index);
+}
+
 function assemblePackage({
   root = ROOT,
   registry = readRegistry(root),
@@ -74,11 +89,12 @@ function assemblePackage({
 
   runCommand("npm", ["run", "build:local"], {
     cwd: root,
-    env: { ...process.env, PORTAL_PACKAGE: "1", PORTAL_BASE: "./" },
+    env: { ...process.env, PORTAL_PACKAGE: "1", PORTAL_BASE: "./", PORTAL_OFFLINE: "1" },
   });
   const portalDist = path.join(root, "dist");
   if (!fs.existsSync(portalDist)) throw new Error("portal offline build output not found at dist");
   fs.cpSync(portalDist, stagingDir, { recursive: true });
+  inlinePortalIndex(portalDist, stagingDir);
 
   const archivePath = path.join(offlineDir, ARCHIVE_NAME);
   runCommand("python3", [path.join(root, "scripts", "create-zip.py"), stagingDir, archivePath], {
