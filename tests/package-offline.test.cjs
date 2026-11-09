@@ -44,7 +44,7 @@ test("assembles local portal and course builds beneath the archive root", () => 
     assert.deepEqual(commands[0], {
       command: "npm",
       args: ["run", "build"],
-      options: { cwd: courseRoot, env: { ...process.env, OFFLINE: "1" } },
+      options: { cwd: courseRoot, env: process.env },
     });
     assert.deepEqual(commands[1], {
       command: "npm",

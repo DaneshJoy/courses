@@ -60,7 +60,7 @@ function assemblePackage({
     try {
       runCommand("npm", ["run", buildScript], {
         cwd: sourceRoot,
-        env: { ...process.env, OFFLINE: "1" },
+        env: process.env,
       });
     } catch (error) {
       throw courseError(entry, error);
