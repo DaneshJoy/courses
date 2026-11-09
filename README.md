@@ -47,7 +47,22 @@ Vite uses `PORTAL_BASE` for its base path and defaults to `/courses/`:
 PORTAL_BASE=/courses/ npm run build
 ```
 
-Offline packaging commands require a POSIX host with `npm` and `python3`; Windows hosts need equivalent shell or CMD handling.
+## Offline instructor package
+
+To build the single-ZIP instructor package (built portal plus local copies of
+all three published courses under `courses/<registry-id>/`):
+
+```sh
+npm ci
+npm run package:offline
+```
+
+The output is `offline/teaching-hub-instructor.zip`. It is instructor-only:
+unzip it anywhere and open the root `index.html` directly in a browser — no
+server or Node.js needed. Packaging requires a POSIX host with `npm`,
+`python3` and `git` (Windows hosts: use WSL).
+
+## Local development beside course repositories
 
 For offline development beside local course repositories, add `localPath` to
 each published registry entry and use `npm run dev:local`. `localPath` is

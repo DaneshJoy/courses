@@ -67,6 +67,11 @@ to the network: `npm run validate:local`, `npm run generate-catalog:local`,
 generate the local catalog and start Vite. Relative `localPath` values are
 resolved from the portal repository root.
 
+Package mode (`PORTAL_PACKAGE=1`, used only by `npm run package:offline`)
+emits the same catalog with relative `courses/<id>/` card URLs so the
+instructor ZIP links to the staged course copies; no other registry behavior
+changes.
+
 - `catalog.json`: version, generation timestamp, and validated course manifests
   (including `featured: true` when requested).
 - `search-index.json`: the compact build-time search data.
