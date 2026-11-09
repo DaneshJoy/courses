@@ -17,7 +17,7 @@ def main() -> None:
     with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         for file in sorted(staging.rglob("*")):
             if file.is_file():
-                archive.write(file, file.relative_to(staging))
+                archive.write(file, file.relative_to(staging).as_posix())
 
 
 if __name__ == "__main__":
