@@ -47,6 +47,8 @@ Vite uses `PORTAL_BASE` for its base path and defaults to `/courses/`:
 PORTAL_BASE=/courses/ npm run build
 ```
 
+Offline packaging commands require a POSIX host with `npm` and `python3`; Windows hosts need equivalent shell or CMD handling.
+
 For offline development beside local course repositories, add `localPath` to
 each published registry entry and use `npm run dev:local`. `localPath` is
 resolved relative to the portal directory (or may be absolute) and points to the

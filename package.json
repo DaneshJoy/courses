@@ -16,9 +16,10 @@
     "generate-catalog:local": "PORTAL_LOCAL=1 node scripts/generate-catalog.cjs",
     "validate": "node scripts/generate-catalog.cjs --validate-only",
     "validate:local": "PORTAL_LOCAL=1 node scripts/generate-catalog.cjs --validate-only",
-    "test": "vitest run tests/*.test.ts tests/*.test.tsx && playwright test",
+    "test": "vitest run tests/*.test.ts tests/*.test.tsx && node --test tests/*.test.cjs && playwright test",
     "check": "npm run validate && npm run build && npm run test",
-    "check:local": "npm run validate:local && npm run build:local && npm run test"
+    "check:local": "npm run validate:local && npm run build:local && npm run test",
+    "package:offline": "node scripts/package-offline.cjs"
   },
   "dependencies": {
     "react": "^19.3.1",

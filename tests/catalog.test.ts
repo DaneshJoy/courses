@@ -287,6 +287,29 @@ describe("catalog generation pipeline", () => {
     expect(result.courses[0]).toMatchObject({ id: "ai-foundations" });
   });
 
+  it("uses package-relative URLs while reading local manifests in package mode", async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "package-manifest-test-"));
+    const courseJsonPath = path.join(tempDir, "course.json");
+    fs.writeFileSync(courseJsonPath, JSON.stringify(manifest));
+    const originalLocal = process.env.PORTAL_LOCAL;
+    const originalPackage = process.env.PORTAL_PACKAGE;
+    process.env.PORTAL_LOCAL = "1";
+    process.env.PORTAL_PACKAGE = "1";
+
+    const result = await generate([setupRegistryEntryWithLocalPath(courseJsonPath)], async () => {
+      throw new Error("Package mode must not fetch manifests");
+    });
+
+    if (originalLocal === undefined) delete process.env.PORTAL_LOCAL;
+    else process.env.PORTAL_LOCAL = originalLocal;
+    if (originalPackage === undefined) delete process.env.PORTAL_PACKAGE;
+    else process.env.PORTAL_PACKAGE = originalPackage;
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    expect(result.ok).toBe(true);
+    expect(result.courses[0].courseUrl).toBe("courses/ai-foundations/");
+  });
+
   it("uses remote manifest when PORTAL_LOCAL is not enabled", async () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "local-prefer-test-"));
     const courseJsonPath = path.join(tempDir, "course.json");
