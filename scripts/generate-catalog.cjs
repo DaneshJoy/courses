@@ -175,6 +175,7 @@ async function loadPublishedCourses(
   fetchImpl = fetch,
   centers = readCenters(),
   localOnly = process.env.PORTAL_LOCAL === "1",
+  packageMode = process.env.PORTAL_PACKAGE === "1",
 ) {
   const validateManifest = ajv.compile(loadSchemas().manifest);
   const courses = [];
@@ -229,7 +230,7 @@ async function loadPublishedCourses(
       console.log(`ok    ${entry.id} (${manifest.lectures.length} lectures)`);
       const course = {
         ...manifest,
-        courseUrl: courseUrl(entry.manifestUrl),
+        courseUrl: packageMode ? `courses/${entry.id}/` : courseUrl(entry.manifestUrl),
         ...(resolvedCenters !== undefined ? { centers: resolvedCenters } : {}),
         ...(entry.featured === true ? { featured: true } : {}),
       };
